@@ -52,6 +52,14 @@ void MainWindow::on_btnSend_clicked(){
             tcpDataClient->SendDataToServer();
         }
     }
+    else{
+        tcpDataClient->QueueDataFrame("<EMPTY TEXT>");
+        WriteLog("Me @ " + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") + ":");
+        WriteLog("<EMPTY TEXT>", true);
+        if (tcpDataClient->IsConnected()){
+            tcpDataClient->SendDataToServer();
+        }
+    }
     return;
 }
 
