@@ -58,67 +58,14 @@ int main(int argc,char **argv)
 		fds[0].events = POLLIN;
 	}
 	
-	pid_t pid;
-	//创建进程	
-	pid = fork();
-	//创建进程出错
-	if(pid == -1){
-		printf("fork failed\n");
-		return 1;
+	//串口发送函数，每隔1秒发送一次字符串
+	write(fd,buffer, strlen(buffer));
+	sleep(1);
+	++i;
+	if (i>=15){
+		break;
 	}
-	//子进程
-	else if(!pid){
-		//初始化信号函数，当父进程结束，则执行信号函数，修改child_signal的值为1
-		//当child_signal=1，则子进程结束
-		signal(SIGHUP, handle_signal);
-		prctl(PR_SET_PDEATHSIG, SIGHUP);
-		while(!child_signal){
-			//串口发送函数，没个1秒发送一次字符串
-			write(fd,buffer, strlen(buffer));
-			sleep(1);
-			++i;
-			if (i>=15){
-				break;
-			}
-		}
-		printf("child fork exit ...!\n");
-		return 0;
-	}
-	//父进程
-	else{
-		while(1){
-			//轮询的方式来确认串口是否接收到数据
-			ret = poll(fds,1, 5000);
-			if(ret == -1){
-				printf("poll error!\n");
-				return 1;
-			}
-			else if(!ret){
-				printf("Time out!\n");
-				printf("fds[0].revents is %d!\n",(char)(fds[0].revents));
-				printf("recev all count = %d!\n",count);
-			}
-			else if(fds[0].revents & POLLIN){
-				//串口接收函数
-				while((nread = read(fd,buff,1))>0){
-					count+=nread;
-					printf("get data count = %d!\n",count);
-					//如果收到字符z，则退出程序
-					if(EXIT_CHAR==buff[0]){
-						printf("parent fork exit ...!\n");					
-						close(fd);
-						return 0;
-					}
-				}
-			}
-			//自动退出
-			if (i>=15){
-				printf("parent fork exit ...!\n");					
-				close(fd);
-				return 0;
-			}
-	    }
-    }	
+	
 	close(fd);
 	return 0;
 }
