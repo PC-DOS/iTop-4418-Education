@@ -22,6 +22,9 @@ void handle_signal(int signo){
     }
 }
 
+//执行次数的计数器
+int i;
+
 //串口初始化函数
 int set_opt(int fd,int nSpeed, int nBits, char nEvent, int nStop);
 
@@ -33,6 +36,7 @@ int main(int argc,char **argv)
 	char buff[8];
 	struct pollfd fds[1];
 	child_signal = 0;
+	i=0;
 	
 	printf("\r\n uart_write_read_test start\r\n");
 	if(2 != argc){
@@ -47,7 +51,7 @@ int main(int argc,char **argv)
 		return 1;
 	}	
 	else {
-		printf("open %s is success\n",uart_innode);
+		printf("open %s is success, start sending 15 strings...\n",uart_innode);
 		//串口参数配置
 		set_opt(fd, 115200, 8, 'N', 1);
 		fds[0].fd = fd;
@@ -72,6 +76,10 @@ int main(int argc,char **argv)
 			//串口发送函数，没个1秒发送一次字符串
 			write(fd,buffer, strlen(buffer));
 			sleep(1);
+			++i;
+			if (i>=15){
+				break;
+			}
 		}
 		printf("child fork exit ...!\n");
 		return 0;
