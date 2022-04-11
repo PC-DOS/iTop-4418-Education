@@ -26,11 +26,9 @@ void main(void)
 		while(LedOnOffTimes--)
 		{
 			printf("ioctl leds %d times\n",LedOnOffTimes);
-			ioctl(fd,0,0);	//parameter 2 is cmd ,cmd = 1 leds on
-			ioctl(fd,0,1);
+			ioctl(fd,0);	//parameter 2 is cmd ,cmd = 1 leds on
 			sleep(1);
-			ioctl(fd,1,0);
-			ioctl(fd,1,1);
+			ioctl(fd,1);
 			sleep(1);		
 		}
     }
