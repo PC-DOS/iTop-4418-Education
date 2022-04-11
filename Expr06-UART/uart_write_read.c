@@ -110,7 +110,13 @@ int main(int argc,char **argv)
 						return 0;
 					}
 				}
-			}		
+			}
+			//×Ô¶¯ÍË³ö
+			if (i>=15){
+				printf("parent fork exit ...!\n");					
+				close(fd);
+				return 0;
+			}
 	    }
     }	
 	close(fd);
