@@ -12,7 +12,7 @@ void main(void)
 {
 	int fd,LedOnOffTimes;
 	char gpio[MAX],cmd[MAX];
-	char *leds = "/dev/leds";
+	char *leds = "/dev/leds_ctl";
 	LedOnOffTimes = MAX;
 	
 	printf("leds light on and off 5 times \r\n");
