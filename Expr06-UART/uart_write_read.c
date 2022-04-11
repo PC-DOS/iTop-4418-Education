@@ -59,11 +59,9 @@ int main(int argc,char **argv)
 	}
 	
 	//串口发送函数，每隔1秒发送一次字符串
-	write(fd,buffer, strlen(buffer));
-	sleep(1);
-	++i;
-	if (i>=15){
-		break;
+	for (i=1;i<=15;++i){
+		write(fd,buffer, strlen(buffer));
+		sleep(1);
 	}
 	
 	close(fd);
