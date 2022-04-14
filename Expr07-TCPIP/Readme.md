@@ -24,7 +24,7 @@
 
 ```
 cd /mnt/sda1
-./TCPNetworkDemo4418 HostIP Port
+./TCPNetworkDemo4418 HostIP Port -qws
 ```
 
 其中，“`HostIP`”为先前记录的实验用计算机的IPv4地址，即“网络调试助手”中显示的“本地主机地址”；“`Port`”为“网络调试助手”中显示的“本地主机端口”的值。
