@@ -15,6 +15,9 @@ TCPClient * tcpDataClient;
 
 /* TCP Networking Data Sending Thread Worker Object */
 TCPClientDataSender::TCPClientDataSender(){
+    //Initialize internal variables
+    _IsDataSending=false;
+
     //Create TCP socket object and connect events
     connect(this, SIGNAL(connected()), this, SLOT(TCPClientDataSender_Connected()), Qt::QueuedConnection);
     connect(this, SIGNAL(disconnected()), this, SLOT(TCPClientDataSender_Disconnected()), Qt::QueuedConnection);
@@ -56,6 +59,16 @@ void TCPClientDataSender::SetAutoReconnectOptionsEventHandler(bool IsAutoReconne
 }
 
 void TCPClientDataSender::SendDataToServerEventHandler(){
+    //Check if SendDataToServerEventHandler() is running, avoid recursive calling of SendDataToServerEventHandler() and segmentation faults
+    if (_IsDataSending){
+        //If this is a recursive calling, simply returns
+        return;
+    }
+    else{
+        //Marks SendDataToServerEventHandler() is running
+        _IsDataSending=true;
+    }
+
     while (!queDataFramesPendingSending.empty() && state()==QTcpSocket::ConnectedState){ //Sends all queued data frames to remote
         QString * frmCurrentSendingDataFrame = NULL;
 
@@ -276,7 +289,9 @@ void TCPClient::QueueDataFrame(const QString &sData){
     mtxDataFramesPendingSendingLock.lock(); //Begin writing internal buffer
 
     if (queDataFramesPendingSending.size()>NET_DATA_QUEUE_MAX_ITEM_COUNT){
-        queDataFramesPendingSending.clear();
+        while (!queDataFramesPendingSending.empty()){
+            delete queDataFramesPendingSending.dequeue();
+        }
         qDebug()<<"TCPClient: Data queue has been purged because it has exceeded the size limit.";
     }
 

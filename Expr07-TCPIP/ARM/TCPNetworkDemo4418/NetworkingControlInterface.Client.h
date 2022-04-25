@@ -58,6 +58,7 @@ private:
     quint16 _iPort; //INTERNAL: Remote port
     bool _IsAutoReconnectEnabled; //INTERNAL: Is auto reconnect function on
     unsigned int _iAutoReconnectDelay; //INTERNAL: Auto reconnect retry interval
+    bool _IsDataSending; //INTERNAL: Marks if we are sending data, avoid recursive calling of SendDataToServerEventHandler() and segmentation faults
 };
 
 /* TCP Networking Client Wrapper */
