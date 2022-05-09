@@ -12,7 +12,7 @@ STRIP=$(CROSS_COMPILE)strip
 
 #执行make或make all时的编译和生成动作
 all:
-	$(CC) -W -o LCD2 LCD2.c
+	$(CC) -W -o LCD2 LCD2.C
 	$(STRIP) LCD2
 
 #执行make clean时的清理动作
