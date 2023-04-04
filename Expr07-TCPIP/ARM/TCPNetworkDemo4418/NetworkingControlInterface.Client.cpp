@@ -31,6 +31,11 @@ TCPClientDataSender::TCPClientDataSender(){
 TCPClientDataSender::~TCPClientDataSender(){
 }
 
+/* Data Sending Status Indicator */
+bool TCPClientDataSender::IsDataSending() const{
+    return bIsDataSending;
+}
+
 /* Connection Management Command Handlers */
 void TCPClientDataSender::ConnectToServerEventHandler(const QString sServerIPNew, quint16 iPortNew,
                                                       bool IsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew, bool bWairForOperationToCompleteNew){
@@ -101,6 +106,8 @@ void TCPClientDataSender::SendDataToServerEventHandler(){
         //Process all events
         QApplication::processEvents();
     }
+    
+    bIsDataSending=false;
     return;
 }
 
@@ -283,6 +290,10 @@ void TCPClient::DisconnectFromServer(bool bWairForOperationToComplete){
 }
 
 void TCPClient::SendDataToServer(){
+    //In high frame rate mode, avoid SendDataToServerRequestedEvent() signal flooding
+    if (tcpDataSender->IsDataSending()){
+        return;
+    }
     emit SendDataToServerEvent();
     return;
 }
