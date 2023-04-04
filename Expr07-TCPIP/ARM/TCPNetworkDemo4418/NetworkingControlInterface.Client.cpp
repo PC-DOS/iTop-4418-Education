@@ -38,10 +38,10 @@ bool TCPClientDataSender::IsDataSending() const{
 
 /* Connection Management Command Handlers */
 void TCPClientDataSender::ConnectToServerEventHandler(const QString sServerIPNew, quint16 iPortNew,
-                                                      bool IsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew, bool bWairForOperationToCompleteNew){
+                                                      bool bIsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew, bool bWairForOperationToCompleteNew){
     sServerIP=sServerIPNew;
     iPort=iPortNew;
-    bIsAutoReconnectEnabled=IsAutoReconnectEnabledNew;
+    bIsAutoReconnectEnabled=bIsAutoReconnectEnabledNew;
     iAutoReconnectDelay=iAutoReconnectDelayNew;
     bIsUserInitiatedDisconnection=false;
 
@@ -196,7 +196,7 @@ TCPClient::TCPClient(){
 }
 
 TCPClient::TCPClient(const QString sServerIPNew, quint16 iPortNew,
-                     bool IsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew){
+                     bool bIsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew){
     //Save settings
     sServerIP=sServerIPNew;
     iPort=iPortNew;
@@ -358,9 +358,9 @@ bool TCPClient::IsValidIPAddress(const QString sIPAddress) const{
     return hstTestAddr.setAddress(sIPAddress);
 }
 
-bool TCPClient::IsValidTCPPort(quint16 iPort, bool UseRegisteredPortsOnly) const{
+bool TCPClient::IsValidTCPPort(quint16 iPort, bool bUseRegisteredPortsOnly) const{
     quint16 iPortIDMin = 1, iPortIDMax = 65535;
-    if (UseRegisteredPortsOnly){
+    if (bUseRegisteredPortsOnly){
         iPortIDMin=1024;
         iPortIDMax=32767;
     }
