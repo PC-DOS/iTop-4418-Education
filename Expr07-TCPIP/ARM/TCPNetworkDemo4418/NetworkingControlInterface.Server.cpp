@@ -33,6 +33,14 @@ void TCPServerSocket::SendDataToClientRequestedEventHandler(QString sDataToSend,
         }
     }
     */
+    //Add line separator, using Linux mode ("\n")
+    if (!sDataToSend.endsWith("\n")){
+        sDataToSend+='\n';
+    }
+    else if (sDataToSend.endsWith("\r\n")) {
+        sDataToSend.remove(sDataToSend.length()-2, 1);
+    }
+    
     //Judge if we need to handle the request
     if ((sClientName == "" && sClientIPAddress == "" && iClientPort == 0) ||
         (sClientName == peerName() && sClientIPAddress == "" && iClientPort == 0) ||
@@ -58,7 +66,14 @@ void TCPServerSocket::CloseAllConnectionsRequestedEventHandler() {
 void TCPServerSocket::CommandReceivedFromClientEventHandler() {
     while (bytesAvailable()) {
         //Read a command line and emit a signal
-        emit SocketCommandReceivedFromClientEvent(readLine(), peerName(), peerAddress().toString(), peerPort());
+        QString sData = readLine();
+        if (sData.endsWith('\n')) {
+            sData.remove(sData.length() - 1, 1);
+        }
+        if (sData.endsWith('\r')) {
+            sData.remove(sData.length() - 1, 1);
+        }
+        emit SocketCommandReceivedFromClientEvent(sData, peerName(), peerAddress().toString(), peerPort());
 
         //Process events
         //QApplication::processEvents();
