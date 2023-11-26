@@ -19,7 +19,7 @@
 /* Setting Key Names */
 //Networking
 #define ST_KEY_NETWORKING_PREFIX   "Networking"
-#define ST_KEY_SERVER_IP           "ServerIP"
+#define ST_KEY_SERVER_IP_ADDRESS   "ServerIPAddress"
 #define ST_KEY_SERVER_PORT         "ServerPort"
 #define ST_KEY_IS_AUTORECONN_ON    "IsAutoReconnectEnabled"
 #define ST_KEY_AUTORECONN_DELAY_MS "AutoReconnectDelay"
@@ -27,7 +27,7 @@
 
 /* Default Values */
 //Networking
-#define ST_DEFVAL_SERVER_IP           "127.0.0.1"
+#define ST_DEFVAL_SERVER_IP_ADDRESS   "127.0.0.1"
 #define ST_DEFVAL_SERVER_PORT         "5245"
 #define ST_DEFVAL_IS_AUTORECONN_ON    false
 #define ST_DEFVAL_AUTORECONN_DELAY_MS 1000

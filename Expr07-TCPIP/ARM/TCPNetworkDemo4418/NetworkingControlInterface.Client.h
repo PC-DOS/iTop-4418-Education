@@ -39,7 +39,7 @@ public:
 
 public slots:
     /* Connection Management Command Handlers */
-    void ConnectToServerRequestedEventHandler(const QString sServerIPNew, quint16 iPortNew,
+    void ConnectToServerRequestedEventHandler(const QString sServerIPAddressNew, quint16 iServerPortNew,
                                               bool bIsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew, bool bWairForOperationToComplete);
     void DisconnectFromServerRequestedEventHandler(bool bWairForOperationToComplete);
     void SetAutoReconnectOptionsRequestedEventHandler(bool bIsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew);
@@ -54,8 +54,8 @@ signals:
     void SocketResponseReceivedFromServerEvent(QString sResponse, QString sServerName, QString sServerIPAddress, quint16 iServerPort);
 
 private:
-    QString sServerIP; //INTERNAL: Remote IP Address
-    quint16 iPort; //INTERNAL: Remote port
+    QString sServerIPAddress; //INTERNAL: Remote IP Address
+    quint16 iServerPort; //INTERNAL: Remote port
     bool bIsAutoReconnectEnabled; //INTERNAL: Is auto reconnect function on
     unsigned int iAutoReconnectDelay; //INTERNAL: Auto reconnect retry interval
     bool bIsUserInitiatedDisconnection; //INTERNAL: Marks if user has initiated a disconnection, to avoid unexpected TryReconnect() flooding
@@ -80,7 +80,7 @@ class TCPClient : public QObject {
 
 public:
     TCPClient(); //Default constructor, loads options from ini file or default values
-    TCPClient(const QString sServerIPNew, quint16 iPortNew,
+    TCPClient(const QString sServerIPAddressNew, quint16 iServerPortNew,
               bool bIsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew); //Constructor with options. Will update options saved in ini file
     ~TCPClient();
 
@@ -92,11 +92,11 @@ public:
     bool IsConnected() const; //Get if we have connected to a remote server
 
     /* Connection Management */
-    void SetServerParameters(const QString sServerIPNew, quint16 iPortNew); //Host information (IP & Port)
-    const QString & GetServerIP() const;
+    void SetServerParameters(const QString sServerIPAddressNew, quint16 iServerPortNew); //Host information (IP Address & Port)
+    const QString & GetServerIPAddress() const;
     quint16 GetServerPort() const;
     void ConnectToServer(bool bWairForOperationToComplete = false); //Connect to remote server with saved values
-    void ConnectToServer(const QString sServerIPNew, quint16 iPortNew,
+    void ConnectToServer(const QString sServerIPAddressNew, quint16 iServerPortNew,
                          bool bIsAutoReconnectEnabledNew = false, unsigned int iAutoReconnectDelayNew = 0, bool bWairForOperationToComplete = false); //Connect to remote server with given address and port. Will update options saved in ini file
     void DisconnectFromServer(bool bWairForOperationToComplete = false); //Disconnect
     void SendDataToServer();
@@ -122,7 +122,7 @@ public slots:
 
 signals:
     /* Signals to Communicate with Worker Object */
-    void ConnectToServerRequestedEvent(const QString sServerIPNew, quint16 iPortNew,
+    void ConnectToServerRequestedEvent(const QString sServerIPAddressNew, quint16 iServerPortNew,
                                        bool bIsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew, bool bWairForOperationToComplete);
     void DisconnectFromServerRequestedEvent(bool bWairForOperationToComplete);
     void SetAutoReconnectOptionsRequestedEvent(bool bIsAutoReconnectEnabledNew, unsigned int iAutoReconnectDelayNew);
@@ -141,8 +141,8 @@ private:
     TCPClientDataSender * tcpDataSender; //Worker object
 
     /* Options Var */
-    QString sServerIP; //INTERNAL: Remote IP Address
-    quint16 iPort; //INTERNAL: Remote port
+    QString sServerIPAddress; //INTERNAL: Remote IP Address
+    quint16 iServerPort; //INTERNAL: Remote port
     bool bIsAutoReconnectEnabled; //INTERNAL: Is auto reconnect function on
     unsigned int iAutoReconnectDelay; //INTERNAL: Auto reconnect retry interval
 };

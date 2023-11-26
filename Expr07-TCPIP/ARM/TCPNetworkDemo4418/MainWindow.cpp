@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget * parent, QString sHostIP, quint16 iHostPort) : Q
 
     /* Establish connection */
     if (sHostIP == "") {
-        sHostIP = tcpDataClient->GetServerIP();
+        sHostIP = tcpDataClient->GetServerIPAddress();
     }
     if (iHostPort == 0) {
         iHostPort = tcpDataClient->GetServerPort();
