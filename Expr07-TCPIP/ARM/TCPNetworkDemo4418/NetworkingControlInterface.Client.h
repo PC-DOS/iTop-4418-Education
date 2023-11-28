@@ -25,6 +25,9 @@
 #include <QTimer>
 #include <QVector>
 
+/* Debug Output Enable */
+//#define IS_TCP_SENDING_DEBUG_OUTPUT_ENABLED
+
 /* TCP Networking Data Sending Thread Worker Object */
 //This object is moved to a child thread to have its own event loop
 class TCPClientDataSender : public QTcpSocket {
@@ -63,6 +66,10 @@ private:
     volatile bool bIsDataSending; //INTERNAL: Marks if we are sending data, avoid recursive calling of SendDataToServerRequestedEventHandler() and segmentation faults
     bool bIsDataSendingStopRequested; //INTERNAL: Marks if controller has requested to stop data sending
 
+#ifdef IS_TCP_SENDING_DEBUG_OUTPUT_ENABLED
+    int iFrameCounter; //INTERNAL:Counter of sent frames
+#endif
+
 private slots:
     /* TCP Socket Event Handler Slots */
     void TCPClientDataSender_Connected();
@@ -72,6 +79,11 @@ private slots:
 
     /* Functional Slots */
     void TryReconnect();
+
+#ifdef IS_TCP_SENDING_DEBUG_OUTPUT_ENABLED
+    /* Debug */
+    void PrintDebugInfo();
+#endif
 };
 
 /* TCP Networking Client Wrapper */

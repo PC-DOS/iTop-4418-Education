@@ -27,6 +27,11 @@ TCPClientDataSender::TCPClientDataSender() {
     qRegisterMetaType<QAbstractSocket::SocketError>("QAbstractSocket::SocketError"); //Register QAbstractSocket::SocketError type for QueuedConnection
     connect(this, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(TCPClientDataSender_Error(QAbstractSocket::SocketError)));
     connect(this, SIGNAL(readyRead()), this, SLOT(TCPClientDataSender_ReadyRead()));
+
+#ifdef IS_TCP_SENDING_DEBUG_OUTPUT_ENABLED
+    iFrameCounter = 0;
+    QTimer::singleShot(10000, this, SLOT(PrintDebugInfo()));
+#endif
 }
 
 TCPClientDataSender::~TCPClientDataSender() {
@@ -105,6 +110,11 @@ void TCPClientDataSender::SendDataToServerRequestedEventHandler() {
         //Free memory space
         delete frmCurrentSendingDataFrame;
         frmCurrentSendingDataFrame = NULL;
+
+#ifdef IS_TCP_SENDING_DEBUG_OUTPUT_ENABLED
+        //Debug
+        ++iFrameCounter;
+#endif
 
         //Process all events
         QApplication::processEvents();
@@ -191,6 +201,15 @@ void TCPClientDataSender::TryReconnect() {
     }
     return;
 }
+
+#ifdef IS_TCP_SENDING_DEBUG_OUTPUT_ENABLED
+/* Debug */
+void TCPClientDataSender::PrintDebugInfo() {
+    qDebug() << "TCPClientDataSender: Sent" << iFrameCounter << " frames in 10 sec, IsDataSending =" << bIsDataSending;
+    iFrameCounter = 0;
+    QTimer::singleShot(10000, this, SLOT(PrintDebugInfo()));
+}
+#endif
 
 /* TCP Networking Client Wrapper */
 TCPClient::TCPClient() {
