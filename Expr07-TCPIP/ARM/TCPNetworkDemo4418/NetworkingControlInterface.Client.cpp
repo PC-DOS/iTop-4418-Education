@@ -95,7 +95,7 @@ void TCPClientDataSender::SendDataToServerRequestedEventHandler() {
     while (state() == QTcpSocket::ConnectedState) {
         //Check if data queue is empty, atomicly
         if (mtxDataFramesPendingSendingLock.tryLockInline()) { //Begin reading internal buffer
-            if (queDataFramesPendingSending.empty()) {
+            if (!queDataFramesPendingSending.empty()) {
                 frmCurrentSendingDataFrame = queDataFramesPendingSending.dequeue();
                 mtxDataFramesPendingSendingLock.unlockInline(); //Don't forget to unlock me!
             }
