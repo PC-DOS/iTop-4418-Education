@@ -108,7 +108,8 @@ void TCPClientDataSender::SendDataToServerRequestedEventHandler() {
             break;
         }
 
-        if (!frmCurrentSendingDataFrame) { //Check if we got null
+        //Check if we got null
+        if (!frmCurrentSendingDataFrame) {
             continue;
         }
 
