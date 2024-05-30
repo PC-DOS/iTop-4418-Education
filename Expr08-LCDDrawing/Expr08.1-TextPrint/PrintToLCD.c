@@ -18,19 +18,19 @@ int iOverflowAction = 1; //指示文字内容溢出时的操作
 int iForeground = 0x00ffffff; //前景色（文字颜色）
 int iBackground = 0x00000000; //背景色（文字背景颜色）
 
-static char * lpFramebuffer = 0; //映射到内存的Framebuffer的起始地址
+static char * lpFrameBuffer = 0; //映射到内存的帧缓存的起始地址
 static unsigned int iXResolution = 0; //屏幕横向分辨率
 static unsigned int iYResolution = 0; //屏幕纵向分辨率
 static unsigned int iBitsPerPixel = 0; //每像素色深
-int hFramebuffer = 0; //Framebuffer设备文件句柄
+int hFrameBuffer = 0; //帧缓存设备文件句柄
 
 struct fb_var_screeninfo varScrInfo; //动态信息
 struct fb_fix_screeninfo fixScrInfo; //静态信息
 long int iScreenSize = 0; //屏幕大小，用字节描述，反映内存映射区域的大小
 
 void PrintManual(); //打印用法
-char * MapFramebufferToMemory(); //映射Framebuffer到内存
-void UnmapFramebuffer(); //取消映射Framebuffer
+char * MapFrameBufferToMemory(); //映射帧缓存到内存
+void UnmapFrameBuffer(); //取消映射帧缓存
 int DrawCharToFrameBuffer(unsigned char chrCharacter, unsigned int iPosX, unsigned int iPosY, unsigned int iCharacterWidth, unsigned int iCharacterHeight); //绘制文本
 
 int main(int iArgCount, char * arrArg[]){
@@ -171,17 +171,17 @@ int main(int iArgCount, char * arrArg[]){
 	}
 	/* 处理用户输入的参数结束 */
 	
-	/* 映射Framebuffer到内存 */
-	lpFramebuffer=MapFramebufferToMemory();
-	if (lpFramebuffer==NULL){
+	/* 映射FrameBuffer到内存 */
+	lpFrameBuffer=MapFrameBufferToMemory();
+	if (lpFrameBuffer==NULL){
 		return -1;
 	}
-	printf("Framebuffer mapped to virtual address 0x%x.\n", lpFramebuffer);
+	printf("FrameBuffer mapped to virtual address 0x%x.\n", lpFrameBuffer);
 
 	/* 确定是否需要清空屏幕 */
 	if (IsClearScreen){
-		//Initialize framebuffer to 0 (black), added by t.c.d.
-		memset(lpFramebuffer, 0, iScreenSize);
+		//Initialize FrameBuffer to 0 (black), added by t.c.d.
+		memset(lpFrameBuffer, 0, iScreenSize);
 	}
 	
 	/* 打印文本 */
@@ -215,8 +215,8 @@ int main(int iArgCount, char * arrArg[]){
 		++i;
 	}
 	
-	UnmapFramebuffer();
-	close(hFramebuffer);
+	UnmapFrameBuffer();
+	close(hFrameBuffer);
 	
 	return 0;
 }
@@ -235,20 +235,20 @@ void PrintManual(){
 	return;
 }
 
-char * MapFramebufferToMemory(){
+char * MapFrameBufferToMemory(){
 	//打开帧缓存设备文件
-	hFramebuffer = open(FRAMEBUFFER_DEVICE_PATH, O_RDWR);
-	if (!hFramebuffer){
-		printf("Error: cannot open framebuffer device.\n");
+	hFrameBuffer = open(FrameBuffer_DEVICE_PATH, O_RDWR);
+	if (!hFrameBuffer){
+		printf("Error: cannot open FrameBuffer device.\n");
 		return NULL;
 	}
 	
 	//获取屏幕信息
-	if (ioctl(hFramebuffer, FBIOGET_FSCREENINFO, &fixScrInfo)){
+	if (ioctl(hFrameBuffer, FBIOGET_FSCREENINFO, &fixScrInfo)){
 		printf("Error：reading fixed information.\n");
 		return NULL;
 	}
-	if (ioctl(hFramebuffer, FBIOGET_VSCREENINFO, &varScrInfo)){
+	if (ioctl(hFrameBuffer, FBIOGET_VSCREENINFO, &varScrInfo)){
 		printf("Error: reading variable information.\n");
 		return NULL;
 	}
@@ -263,17 +263,17 @@ char * MapFramebufferToMemory(){
 	printf("ScreenSize=%d byte\n",iScreenSize);
 
 	//对象映射
-	lpFramebuffer = (char *)mmap(0, iScreenSize, PROT_READ | PROT_WRITE, MAP_SHARED, hFramebuffer, 0);
-	if ((int)lpFramebuffer == -1){
-		printf("Error: failed to map framebuffer device to memory.\n");
+	lpFrameBuffer = (char *)mmap(0, iScreenSize, PROT_READ | PROT_WRITE, MAP_SHARED, hFrameBuffer, 0);
+	if ((int)lpFrameBuffer == -1){
+		printf("Error: failed to map FrameBuffer device to memory.\n");
 		return NULL;
 	}
 
-	return lpFramebuffer;
+	return lpFrameBuffer;
 }
 
-void UnmapFramebuffer(){
-	munmap(lpFramebuffer, iScreenSize);
+void UnmapFrameBuffer(){
+	munmap(lpFrameBuffer, iScreenSize);
 	return;
 }
 
@@ -295,7 +295,7 @@ int DrawCharToFrameBuffer(unsigned char chrCharacter, unsigned int iPosX, unsign
 		for (w = iPosX; w < iPosX + iCharacterWidth; ++w){
 			// 显存抽象的像素点索引位置
 			idx = (h*iXResolution + w)*(iBitsPerPixel/8);
-			//printf("Will draw at 0x%x+0x%x.\n", lpFramebuffer, idx);
+			//printf("Will draw at 0x%x+0x%x.\n", lpFrameBuffer, idx);
 			//printf("h=%u, w=%u, base=%u, row=%u.\n", h, w, base, row);
 			// 该点在点阵中的位置
 			rank = 1 << (ROW_SIZE_BIT - (w - iPosX));
@@ -309,10 +309,10 @@ int DrawCharToFrameBuffer(unsigned char chrCharacter, unsigned int iPosX, unsign
 					if (iForeground<0){
 						iForeground=0;
 					}
-					*(lpFramebuffer + idx + 0) = (char)((iForeground&0x000000ff));
-					*(lpFramebuffer + idx + 1) = (char)((iForeground&0x0000ff00)>>8);
-					*(lpFramebuffer + idx + 2) = (char)((iForeground&0x00ff0000)>>16);
-					*(lpFramebuffer + idx + 3) = (char)(0x00);
+					*(lpFrameBuffer + idx + 0) = (char)((iForeground&0x000000ff));
+					*(lpFrameBuffer + idx + 1) = (char)((iForeground&0x0000ff00)>>8);
+					*(lpFrameBuffer + idx + 2) = (char)((iForeground&0x00ff0000)>>16);
+					*(lpFrameBuffer + idx + 3) = (char)(0x00);
 				}
 				else if (iBitsPerPixel == 24){
 					// 如果是24位色，则一个像素用24位描绘
@@ -322,9 +322,9 @@ int DrawCharToFrameBuffer(unsigned char chrCharacter, unsigned int iPosX, unsign
 					if (iForeground<0){
 						iForeground=0;
 					}
-					*(lpFramebuffer + idx + 0) = (char)((iForeground&0x000000ff));
-					*(lpFramebuffer + idx + 1) = (char)((iForeground&0x0000ff00)>>8);
-					*(lpFramebuffer + idx + 2) = (char)((iForeground&0x00ff0000)>>16);		
+					*(lpFrameBuffer + idx + 0) = (char)((iForeground&0x000000ff));
+					*(lpFrameBuffer + idx + 1) = (char)((iForeground&0x0000ff00)>>8);
+					*(lpFrameBuffer + idx + 2) = (char)((iForeground&0x00ff0000)>>16);		
 				}
 				else if(iBitsPerPixel == 16){
 					// 如果是16位色，则一个像素用16位描绘
@@ -334,8 +334,8 @@ int DrawCharToFrameBuffer(unsigned char chrCharacter, unsigned int iPosX, unsign
 					if (iForeground<0){
 						iForeground=0;
 					}
-					*(lpFramebuffer + idx + 0) = (char)((iForeground&0x000000ff));
-					*(lpFramebuffer + idx + 1) = (char)((iForeground&0x0000ff00)>>8);
+					*(lpFrameBuffer + idx + 0) = (char)((iForeground&0x000000ff));
+					*(lpFrameBuffer + idx + 1) = (char)((iForeground&0x0000ff00)>>8);
 				}
 				else if(iBitsPerPixel == 8){
 					// 如果是8位色，则一个像素用8位描绘
@@ -345,7 +345,7 @@ int DrawCharToFrameBuffer(unsigned char chrCharacter, unsigned int iPosX, unsign
 					if (iForeground<0){
 						iForeground=0;
 					}
-					*(lpFramebuffer + idx + 0) = (char)(iForeground);
+					*(lpFrameBuffer + idx + 0) = (char)(iForeground);
 				}
 			}
 			else{ // 如果该点在点阵中是0，就用背景色描绘该像素
@@ -353,31 +353,31 @@ int DrawCharToFrameBuffer(unsigned char chrCharacter, unsigned int iPosX, unsign
 				if (iBitsPerPixel == 32){
 					// 如果是32位色，则一个像素用32位描绘
 					if (iBackground>=0 && iBackground<=0x00ffffff){ //如果是合法色值则绘制背景，若为非法色值，绘制透明背景
-						*(lpFramebuffer + idx + 0) = (char)((iBackground&0x000000ff));
-						*(lpFramebuffer + idx + 1) = (char)((iBackground&0x0000ff00)>>8);
-						*(lpFramebuffer + idx + 2) = (char)((iBackground&0x00ff0000)>>16);
-						*(lpFramebuffer + idx + 3) = (char)(0x00);	
+						*(lpFrameBuffer + idx + 0) = (char)((iBackground&0x000000ff));
+						*(lpFrameBuffer + idx + 1) = (char)((iBackground&0x0000ff00)>>8);
+						*(lpFrameBuffer + idx + 2) = (char)((iBackground&0x00ff0000)>>16);
+						*(lpFrameBuffer + idx + 3) = (char)(0x00);	
 					}
 				}
 				else if (iBitsPerPixel == 24){
 					// 如果是24位色，则一个像素用24位描绘
 					if (iBackground>=0 && iBackground<=0x00ffffff){ //如果是合法色值则绘制背景，若为非法色值，绘制透明背景
-						*(lpFramebuffer + idx + 0) = (char)((iBackground&0x000000ff));
-						*(lpFramebuffer + idx + 1) = (char)((iBackground&0x0000ff00)>>8);
-						*(lpFramebuffer + idx + 2) = (char)((iBackground&0x00ff0000)>>16);
+						*(lpFrameBuffer + idx + 0) = (char)((iBackground&0x000000ff));
+						*(lpFrameBuffer + idx + 1) = (char)((iBackground&0x0000ff00)>>8);
+						*(lpFrameBuffer + idx + 2) = (char)((iBackground&0x00ff0000)>>16);
 					}		
 				}
 				else if(iBitsPerPixel == 16){
 					// 如果是16位色，则一个像素用16位描绘
 					if (iBackground>=0 && iBackground<=0x0000ffff){ //如果是合法色值则绘制背景，若为非法色值，绘制透明背景
-						*(lpFramebuffer + idx + 0) = (char)((iBackground&0x000000ff));
-						*(lpFramebuffer + idx + 1) = (char)((iBackground&0x0000ff00)>>8);
+						*(lpFrameBuffer + idx + 0) = (char)((iBackground&0x000000ff));
+						*(lpFrameBuffer + idx + 1) = (char)((iBackground&0x0000ff00)>>8);
 					}
 				}
 				else if(iBitsPerPixel == 8){
 					// 如果是8位色，则一个像素用8位描绘
 					if (iBackground>=0 && iBackground<=0x000000ff){ //如果是合法色值则绘制背景，若为非法色值，绘制透明背景
-						*(lpFramebuffer + idx + 0) = (char)(iBackground);
+						*(lpFrameBuffer + idx + 0) = (char)(iBackground);
 					}
 				}
 			}

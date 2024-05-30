@@ -1,6 +1,6 @@
 # LCD打印点阵文字
 
-向Framebuffer中打印点阵文本。是用来自Linux内核的点阵字体。
+向Framebuffer中打印点阵文本。使用来自Linux内核的点阵字体。
 
 用法：
 
