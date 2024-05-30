@@ -10,194 +10,201 @@
 
 
 //14byte文件头
-typedef struct
-{
-	char cfType[2];//文件类型，"BM"(0x4D42)
-	long cfSize;//文件大小（字节）
-	long cfReserved;//保留，值为0
-	long cfoffBits;//数据区相对于文件头的偏移量（字节）
-}__attribute__((packed)) BITMAPFILEHEADER;
+typedef struct {
+    char cfType[2]; //文件类型，"BM"(0x4D42)
+    long cfSize; //文件大小（字节）
+    long cfReserved; //保留，值为0
+    long cfDataOffset; //数据区相对于文件头的偏移量（字节）
+}__attribute__((packed)) BitmapFileHeader;
 //__attribute__((packed))的作用是告诉编译器取消结构在编译过程中的优化对齐
 
 //40byte信息头
-typedef struct
-{
-	char ciSize[4];//BITMAPFILEHEADER所占的字节数
-	long ciWidth;//宽度
-	long ciHeight;//高度
-	char ciPlanes[2];//目标设备的位平面数，值为1
-	int ciBitCount;//每个像素的位数
-	char ciCompress[4];//压缩说明
-	char ciSizeImage[4];//用字节表示的图像大小，该数据必须是4的倍数
-	char ciXPelsPerMeter[4];//目标设备的水平像素数/米
-	char ciYPelsPerMeter[4];//目标设备的垂直像素数/米
-	char ciClrUsed[4]; //位图使用调色板的颜色数
-	char ciClrImportant[4]; //指定重要的颜色数，当该域的值等于颜色数时（或者等于0时），表示所有颜色都一样重要
-}__attribute__((packed)) BITMAPINFOHEADER;
+typedef struct {
+    char ciSize[4]; //BITMAPFILEHEADER所占的字节数
+    long ciWidth; //宽度
+    long ciHeight; //高度
+    char ciPlanes[2]; //目标设备的位平面数，值为1
+    int ciBitCount; //每个像素的位数
+    char ciCompress[4]; //压缩说明
+    char ciSizeImage[4]; //用字节表示的图像大小，该数据必须是4的倍数
+    char ciXPelsPerMeter[4]; //目标设备的水平像素数/米
+    char ciYPelsPerMeter[4]; //目标设备的垂直像素数/米
+    char ciClrUsed[4]; //位图使用调色板的颜色数
+    char ciClrImportant[4]; //指定重要的颜色数，当该域的值等于颜色数时（或者等于0时），表示所有颜色都一样重要
+}__attribute__((packed)) BitmapInfoHeader;
 
-typedef struct
-{
-	unsigned char blue;
-	unsigned char green;
-	unsigned char red;
-	//unsigned short reserved;
-}__attribute__((packed)) PIXEL;//颜色模式RGB
+typedef struct {
+    unsigned char blue;
+    unsigned char green;
+    unsigned char red;
+    //unsigned short reserved;
+}__attribute__((packed)) Pixel24Bit; //颜色模式RGB
 
-BITMAPFILEHEADER FileHead;
-BITMAPINFOHEADER InfoHead;
+BitmapFileHeader fhFileHead;
+BitmapInfoHeader ihInfoHead;
 
-static char *fbp = 0;
-static int xres = 0;
-static int yres = 0;
-static int bits_per_pixel = 0;
+static char * lpFrameBuffer = 0;
+static int iScreenResolutionWidth = 0;
+static int iScreenResolutionHeight = 0;
+static int iScreenBitsPerPixel = 0;
+static int iScreenBytesPerPixel = 0;
 
-int show_bmp();
+int PrintBitmap24BitToScreen();
 
-int main ( int argc, char *argv[] )
-{
-	//Check if file path is given. Added by t.c.d.
-	if (argv[1]==NULL){
-		printf("Error: File to display must be specified.\n");
-		printf("\n");
-		printf("Usage:\nLCD file\n\n");
-		return 0;
-	}
+int main(int argc, char *argv[]) {
+    //Check if file path is given. Added by Picsell Dois (t.c.d.)
+    if (argv[1]==NULL){
+        printf("Error: File to display must be specified.\n");
+        printf("\n");
+        printf("Usage:\nLCD file\n\n");
+        return 0;
+    }
 
-	int fbfd = 0;
-	struct fb_var_screeninfo vinfo;
-	struct fb_fix_screeninfo finfo;
-	long int screensize = 0;
-	struct fb_bitfield red;
-	struct fb_bitfield green;
-	struct fb_bitfield blue;
+    int hFrameBufferFile = 0;
+    struct fb_var_screeninfo nfoScreenInfoVariable;
+    struct fb_fix_screeninfo nfoScreenInfoFixed;
+    long int iScreenTotalSizeInByte = 0;
 
-	//打开显示设备
-	fbfd = open("/dev/fb0", O_RDWR);
-	if (!fbfd)
-	{
-		printf("Error: cannot open framebuffer device.\n");
-		exit(1);
-	}
+    //打开显示设备
+    hFrameBufferFile = open("/dev/fb0", O_RDWR);
+    if (!hFrameBufferFile) {
+        printf("Error: cannot open framebuffer device.\n");
+        exit(1);
+    }
 
-	if (ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo))
-	{
-		printf("Error：reading fixed information.\n");
-		exit(2);
-	}
+    if (ioctl(hFrameBufferFile, FBIOGET_FSCREENINFO, &nfoScreenInfoFixed)) {
+        printf("Error：reading fixed information.\n");
+        exit(2);
+    }
 
-	if (ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo))
-	{
-		printf("Error: reading variable information.\n");
-		exit(3);
-	}
+    if (ioctl(hFrameBufferFile, FBIOGET_VSCREENINFO, &nfoScreenInfoVariable)) {
+        printf("Error: reading variable information.\n");
+        exit(3);
+    }
 
-	printf("R:%d,G:%d,B:%d \n", vinfo.red, vinfo.green, vinfo.blue );
+    printf("Pixel Param: R:%d,G:%d,B:%d \n", nfoScreenInfoVariable.red, nfoScreenInfoVariable.green, nfoScreenInfoVariable.blue);
 
-	printf("%dx%d, %dbpp\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel );
-	xres = vinfo.xres;
-	yres = vinfo.yres;
-	bits_per_pixel = vinfo.bits_per_pixel;
+    printf("Screen Info: %dx%d, %dbpp\n", nfoScreenInfoVariable.xres, nfoScreenInfoVariable.yres, nfoScreenInfoVariable.bits_per_pixel);
+    iScreenResolutionWidth = nfoScreenInfoVariable.xres;
+    iScreenResolutionHeight = nfoScreenInfoVariable.yres;
+    iScreenBitsPerPixel = nfoScreenInfoVariable.bits_per_pixel;
+    iScreenBytesPerPixel = iScreenBitsPerPixel / 8;
 
-	//计算屏幕的总大小（字节）
-	screensize = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
-	printf("screensize=%d byte\n",screensize);
+    //计算屏幕的总大小（字节）
+    iScreenTotalSizeInByte = nfoScreenInfoVariable.xres * nfoScreenInfoVariable.yres * nfoScreenInfoVariable.bits_per_pixel / 8;
+    printf("iScreenTotalSizeInByte = %d byte\n",iScreenTotalSizeInByte);
 
-	//对象映射
-	fbp = (char *)mmap(0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
-	if ((int)fbp == -1)
-	{
-		printf("Error: failed to map framebuffer device to memory.\n");
-		exit(4);
-	}
+    //对象映射
+    lpFrameBuffer = (char *)mmap(0, iScreenTotalSizeInByte, PROT_READ | PROT_WRITE, MAP_SHARED, hFrameBufferFile, 0);
+    if ((int)lpFrameBuffer == -1)
+    {
+        printf("Error: failed to map framebuffer device to memory.\n");
+        exit(4);
+    }
 
-	
-	//Initialize framebuffer to 0 (black), added by t.c.d.
-	memset(fbp, 0, screensize);
 
-	printf("sizeof file header=%d\n", sizeof(BITMAPFILEHEADER));
+    //Initialize framebuffer to 0 (black), added by Picsell Dois (t.c.d.)
+    memset(lpFrameBuffer, 0, iScreenTotalSizeInByte);
 
-	printf("into show_bmp function\n");
+    printf("sizeof(BitmapFileHeader) = %d\n", sizeof(BitmapFileHeader));
 
-	//显示图像
-	show_bmp(argv[1]);
+    printf("Begin drawing bitmap to screen\n");
 
-	//删除对象映射
-	munmap(fbp, screensize);
-	close(fbfd);
-	return 0;
+    //显示图像
+    PrintBitmap24BitToScreen(argv[1]);
+
+    //删除对象映射
+    munmap(lpFrameBuffer, iScreenTotalSizeInByte);
+    close(hFrameBufferFile);
+
+    return 0;
 }
 
-int show_bmp(char * sFilePath)
+int PrintBitmap24BitToScreen(char * sFilePath)
 {
-	FILE *fp;
-	int rc;
-	int line_x, line_y;
-	long int location = 0, BytesPerLine = 0;
-	char tmp[1024*10];
+    FILE * hBitmapFile;
+    int iReadResult;
+    int iCurrentDrawingLineX = 0;
+    int iCurrentDrawingLineY = 0;
+    long int iCurrentDrawingLocation = 0, iBytesPerLine = 0;
 
-	fp = fopen( sFilePath, "rb" );
-	if (fp == NULL)
-	{	
-		return( -1 );
-	}
+    hBitmapFile = fopen(sFilePath, "rb");
+    if (hBitmapFile == NULL) {
+        return(-1);
+    }
 
-	rc = fread( &FileHead, sizeof(BITMAPFILEHEADER),1, fp );
-	if ( rc != 1)
-	{
-		printf("read header error!\n");
-		fclose( fp );
-		return( -2 );
-	}
-	//检测是否是bmp图像
-	if (memcmp(FileHead.cfType, "BM", 2) != 0)
-	{
-		printf("it's not a BMP file\n");
-		fclose( fp );
-		return( -3 );
-	}
-	
-	rc = fread( (char *)&InfoHead, sizeof(BITMAPINFOHEADER),1, fp );
-	if ( rc != 1)
-	{
-		printf("read infoheader error!\n");
-		fclose( fp );
-		return( -4 );
-	}
-	//跳转的数据区
-	printf("FileHead.cfoffBits=%d\n",FileHead.cfoffBits);
-	fseek(fp, FileHead.cfoffBits, SEEK_SET);
-	//每行字节数
-	BytesPerLine = (InfoHead.ciWidth * InfoHead.ciBitCount + 31) / 32 * 4;
-	printf("BytesPerLine=%d\n",BytesPerLine);
-	
-	
-	line_x = line_y = 0;
-	//向framebuffer中写BMP图片
-	while(!feof(fp))
-	{
-		PIXEL pix; //For 24-bit bitmap
-		unsigned short int tmp;
-		location = line_x * bits_per_pixel / 8 + (InfoHead.ciHeight - line_y - 1) * xres * bits_per_pixel / 8;
+    iReadResult = fread(&fhFileHead, sizeof(BitmapFileHeader), 1, hBitmapFile);
+    if (iReadResult != 1) {
+        printf("Error: Failed to read file header\n");
+        fclose(hBitmapFile);
+        return(-2);
+    }
 
-		//显示每一个像素
-		rc = fread( (char *)&pix, 1, sizeof(PIXEL), fp);
-		if (rc != sizeof(PIXEL)){
-			break;
-		}
-		*(fbp + location + 0)=pix.blue;
-		*(fbp + location + 1)=pix.green;
-		*(fbp + location + 2)=pix.red;
-		*(fbp + location + 3)=0;
+    //检测是否是BMP图像
+    if (memcmp(fhFileHead.cfType, "BM", 2) != 0) {
+        printf("Error: File type mismatch, must be a 24-bit BMP file\n");
+        fclose(hBitmapFile);
+        return(-3);
+    }
 
-		line_x++;
-		if (line_x == InfoHead.ciWidth )
-		{
-			line_x = 0;
-			line_y++;
-			if(line_y == InfoHead.ciHeight)
-				break;
-		}
-	}
-	fclose( fp );
-	return( 0 );
+    iReadResult = fread((char *)&ihInfoHead, sizeof(BitmapInfoHeader),1, hBitmapFile);
+    if (iReadResult != 1) {
+        printf("Error: Failed to read info header\n");
+        fclose(hBitmapFile);
+        return(-4);
+    }
+
+    //跳转的数据区
+    printf("fhFileHead.cfDataOffset=%d\n",fhFileHead.cfDataOffset);
+    fseek(hBitmapFile, fhFileHead.cfDataOffset, SEEK_SET);
+
+    //尺寸
+    printf("ihInfoHead.ciWidth=%d\n",ihInfoHead.ciWidth);
+    printf("ihInfoHead.ciHeight=%d\n",ihInfoHead.ciHeight);
+    printf("ihInfoHead.ciBitCount=%d\n",ihInfoHead.ciBitCount);
+
+    //每行字节数
+    iBytesPerLine = (ihInfoHead.ciWidth * ihInfoHead.ciBitCount + 31) / 32 * 4;
+    printf("iBytesPerLine=%d\n",iBytesPerLine);
+
+    //Zero value filled by BMP structrue (see https://www.bilibili.com/read/cv34494181/)
+    int nZeroBytePerLine = 0;
+    nZeroBytePerLine = iBytesPerLine - (ihInfoHead.ciWidth * ihInfoHead.ciBitCount) / 8;
+
+    iCurrentDrawingLineX = 0;
+    iCurrentDrawingLineY = 0;
+    //向FrameBuffer中写BMP图片
+    while (!feof(hBitmapFile)) {
+        //24-Bit pixel
+        Pixel24Bit pixCurrentPixel;
+        char chrNull;
+
+        iCurrentDrawingLocation = iCurrentDrawingLineX * iScreenBytesPerPixel + (ihInfoHead.ciHeight - iCurrentDrawingLineY - 1) * iScreenResolutionWidth * iScreenBytesPerPixel;
+
+        //显示每一个像素
+        iReadResult = fread((char *)(&pixCurrentPixel), 1, sizeof(Pixel24Bit), hBitmapFile);
+        if (iReadResult != sizeof(Pixel24Bit)){
+            break;
+        }
+        *(lpFrameBuffer + iCurrentDrawingLocation + 0) = pixCurrentPixel.blue;
+        *(lpFrameBuffer + iCurrentDrawingLocation + 1) = pixCurrentPixel.green;
+        *(lpFrameBuffer + iCurrentDrawingLocation + 2) = pixCurrentPixel.red;
+        *(lpFrameBuffer + iCurrentDrawingLocation + 3) = 0;
+
+        //Skip zero bytes
+        for (int i = 0; i < nZeroBytePerLine; ++i) {
+            fread((char *)(&chrNull), 1, 1, hBitmapFile);
+        }
+
+        ++iCurrentDrawingLineX;
+        if (iCurrentDrawingLineX == ihInfoHead.ciWidth) {
+            iCurrentDrawingLineX = 0;
+            ++iCurrentDrawingLineY;
+            if(iCurrentDrawingLineY == ihInfoHead.ciHeight) {
+                break;
+            }
+        }
+    }
+    fclose(hBitmapFile);
+    return(0);
 }
