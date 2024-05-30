@@ -155,21 +155,22 @@ int PrintBitmap24BitToScreen(char * sFilePath)
     }
 
     //跳转的数据区
-    printf("fhFileHead.cfDataOffset=%d\n",fhFileHead.cfDataOffset);
+    printf("fhFileHead.cfDataOffset=%d\n", fhFileHead.cfDataOffset);
     fseek(hBitmapFile, fhFileHead.cfDataOffset, SEEK_SET);
 
     //尺寸
-    printf("ihInfoHead.ciWidth=%d\n",ihInfoHead.ciWidth);
-    printf("ihInfoHead.ciHeight=%d\n",ihInfoHead.ciHeight);
-    printf("ihInfoHead.ciBitCount=%d\n",ihInfoHead.ciBitCount);
+    printf("ihInfoHead.ciWidth=%d\n", ihInfoHead.ciWidth);
+    printf("ihInfoHead.ciHeight=%d\n", ihInfoHead.ciHeight);
+    printf("ihInfoHead.ciBitCount=%d\n", ihInfoHead.ciBitCount);
 
     //每行字节数
     iBytesPerLine = (ihInfoHead.ciWidth * ihInfoHead.ciBitCount + 31) / 32 * 4;
-    printf("iBytesPerLine=%d\n",iBytesPerLine);
+    printf("iBytesPerLine=%d\n", iBytesPerLine);
 
     //Zero value filled by BMP structrue (see https://www.bilibili.com/read/cv34494181/)
     int nZeroBytePerLine = 0;
     nZeroBytePerLine = iBytesPerLine - (ihInfoHead.ciWidth * ihInfoHead.ciBitCount) / 8;
+    printf("nZeroBytePerLine=%d\n", nZeroBytePerLine);
 
     iCurrentDrawingLineX = 0;
     iCurrentDrawingLineY = 0;
@@ -183,7 +184,7 @@ int PrintBitmap24BitToScreen(char * sFilePath)
 
         //显示每一个像素
         iReadResult = fread((char *)(&pixCurrentPixel), 1, sizeof(Pixel24Bit), hBitmapFile);
-        if (iReadResult != sizeof(Pixel24Bit)){
+        if (iReadResult != sizeof(Pixel24Bit)) {
             break;
         }
         *(lpFrameBuffer + iCurrentDrawingLocation + 0) = pixCurrentPixel.blue;
@@ -191,13 +192,17 @@ int PrintBitmap24BitToScreen(char * sFilePath)
         *(lpFrameBuffer + iCurrentDrawingLocation + 2) = pixCurrentPixel.red;
         *(lpFrameBuffer + iCurrentDrawingLocation + 3) = 0;
 
-        //Skip zero bytes
-        for (int i = 0; i < nZeroBytePerLine; ++i) {
-            fread((char *)(&chrNull), 1, 1, hBitmapFile);
-        }
-
+        //Update drawing pos
         ++iCurrentDrawingLineX;
         if (iCurrentDrawingLineX == ihInfoHead.ciWidth) {
+
+            //Skip zero bytes
+            int i;
+            for (i = 0; i < nZeroBytePerLine; ++i) {
+                fread((char *)(&chrNull), 1, 1, hBitmapFile);
+            }
+            
+            //Move to next line
             iCurrentDrawingLineX = 0;
             ++iCurrentDrawingLineY;
             if(iCurrentDrawingLineY == ihInfoHead.ciHeight) {
