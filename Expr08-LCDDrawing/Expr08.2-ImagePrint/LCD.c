@@ -40,19 +40,24 @@ typedef struct {
     //unsigned short reserved;
 }__attribute__((packed)) Pixel24Bit; //颜色模式RGB
 
+//文件头
 BitmapFileHeader fhFileHead;
 BitmapInfoHeader ihInfoHead;
 
+//帧缓冲起始指针
 static char * lpFrameBuffer = 0;
+
+//屏幕参数
 static int iScreenResolutionWidth = 0;
 static int iScreenResolutionHeight = 0;
 static int iScreenBitsPerPixel = 0;
 static int iScreenBytesPerPixel = 0;
 
+//显示BMP图像的函数
 int PrintBitmap24BitToScreen();
 
 int main(int argc, char *argv[]) {
-    //Check if file path is given. Added by Picsell Dois (t.c.d.)
+    //检查文件路径是否有效
     if (argv[1]==NULL){
         printf("Error: File to display must be specified.\n");
         printf("\n");
@@ -72,18 +77,19 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    //获取屏幕信息
     if (ioctl(hFrameBufferFile, FBIOGET_FSCREENINFO, &nfoScreenInfoFixed)) {
         printf("Error：reading fixed information.\n");
         exit(2);
     }
 
+    //获取屏幕信息
     if (ioctl(hFrameBufferFile, FBIOGET_VSCREENINFO, &nfoScreenInfoVariable)) {
         printf("Error: reading variable information.\n");
         exit(3);
     }
 
     printf("Pixel Param: R:%d,G:%d,B:%d \n", nfoScreenInfoVariable.red, nfoScreenInfoVariable.green, nfoScreenInfoVariable.blue);
-
     printf("Screen Info: %dx%d, %dbpp\n", nfoScreenInfoVariable.xres, nfoScreenInfoVariable.yres, nfoScreenInfoVariable.bits_per_pixel);
     iScreenResolutionWidth = nfoScreenInfoVariable.xres;
     iScreenResolutionHeight = nfoScreenInfoVariable.yres;
@@ -103,14 +109,11 @@ int main(int argc, char *argv[]) {
     }
 
 
-    //Initialize framebuffer to 0 (black), added by Picsell Dois (t.c.d.)
+    //初始化帧缓冲为全0x00
     memset(lpFrameBuffer, 0, iScreenTotalSizeInByte);
 
-    printf("sizeof(BitmapFileHeader) = %d\n", sizeof(BitmapFileHeader));
-
-    printf("Begin drawing bitmap to screen\n");
-
     //显示图像
+    printf("Begin drawing bitmap to screen\n");
     PrintBitmap24BitToScreen(argv[1]);
 
     //删除对象映射
@@ -120,19 +123,22 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-int PrintBitmap24BitToScreen(char * sFilePath)
-{
+int PrintBitmap24BitToScreen(char * sFilePath) {
+    
     FILE * hBitmapFile;
     int iReadResult;
     int iCurrentDrawingLineX = 0;
     int iCurrentDrawingLineY = 0;
     long int iCurrentDrawingLocation = 0, iBytesPerLine = 0;
 
+    //打开文件
     hBitmapFile = fopen(sFilePath, "rb");
     if (hBitmapFile == NULL) {
         return(-1);
     }
 
+    //读取文件头
+    printf("sizeof(BitmapFileHeader) = %d\n", sizeof(BitmapFileHeader));
     iReadResult = fread(&fhFileHead, sizeof(BitmapFileHeader), 1, hBitmapFile);
     if (iReadResult != 1) {
         printf("Error: Failed to read file header\n");
@@ -147,6 +153,8 @@ int PrintBitmap24BitToScreen(char * sFilePath)
         return(-3);
     }
 
+    //读取信息头
+    printf("sizeof(BitmapInfoHeader) = %d\n", sizeof(BitmapInfoHeader));
     iReadResult = fread((char *)&ihInfoHead, sizeof(BitmapInfoHeader),1, hBitmapFile);
     if (iReadResult != 1) {
         printf("Error: Failed to read info header\n");
@@ -158,7 +166,7 @@ int PrintBitmap24BitToScreen(char * sFilePath)
     printf("fhFileHead.cfDataOffset=%d\n", fhFileHead.cfDataOffset);
     fseek(hBitmapFile, fhFileHead.cfDataOffset, SEEK_SET);
 
-    //尺寸
+    //显示图片尺寸
     printf("ihInfoHead.ciWidth=%d\n", ihInfoHead.ciWidth);
     printf("ihInfoHead.ciHeight=%d\n", ihInfoHead.ciHeight);
     printf("ihInfoHead.ciBitCount=%d\n", ihInfoHead.ciBitCount);
@@ -167,16 +175,18 @@ int PrintBitmap24BitToScreen(char * sFilePath)
     iBytesPerLine = (ihInfoHead.ciWidth * ihInfoHead.ciBitCount + 31) / 32 * 4;
     printf("iBytesPerLine=%d\n", iBytesPerLine);
 
-    //Zero value filled by BMP structrue (see https://www.bilibili.com/read/cv34494181/)
+    //BMP文件在每行字节数不是4的整数倍时，会使用0x00填充行尾，以满足4字节对齐需求
+    //因此，需要计算每行末尾的0x00字节个数
+    //请参考：https://www.bilibili.com/read/cv34494181/
     int nZeroBytePerLine = 0;
     nZeroBytePerLine = iBytesPerLine - (ihInfoHead.ciWidth * ihInfoHead.ciBitCount) / 8;
     printf("nZeroBytePerLine=%d\n", nZeroBytePerLine);
 
     iCurrentDrawingLineX = 0;
     iCurrentDrawingLineY = 0;
-    //向FrameBuffer中写BMP图片
+    //向帧缓冲中写BMP图片
     while (!feof(hBitmapFile)) {
-        //24-Bit pixel
+        //24-Bit像素对象
         Pixel24Bit pixCurrentPixel;
         char chrNull;
 
@@ -192,17 +202,17 @@ int PrintBitmap24BitToScreen(char * sFilePath)
         *(lpFrameBuffer + iCurrentDrawingLocation + 2) = pixCurrentPixel.red;
         *(lpFrameBuffer + iCurrentDrawingLocation + 3) = 0;
 
-        //Update drawing pos
+        //更新绘图位置
         ++iCurrentDrawingLineX;
         if (iCurrentDrawingLineX == ihInfoHead.ciWidth) {
 
-            //Skip zero bytes
+            //跳过行尾0x00字节
             int i;
             for (i = 0; i < nZeroBytePerLine; ++i) {
                 fread((char *)(&chrNull), 1, 1, hBitmapFile);
             }
             
-            //Move to next line
+            //移动到下一行
             iCurrentDrawingLineX = 0;
             ++iCurrentDrawingLineY;
             if(iCurrentDrawingLineY == ihInfoHead.ciHeight) {
