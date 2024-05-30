@@ -11,7 +11,7 @@
 
 //14byte文件头
 typedef struct {
-    char cfType[2]; //文件类型，"BM"(0x4D42)
+    char cfType[2]; //文件类型，固定为字符串"BM"(0x4D42)
     long cfSize; //文件大小（字节）
     long cfReserved; //保留，值为0
     long cfDataOffset; //数据区相对于文件头的偏移量（字节）
@@ -20,7 +20,7 @@ typedef struct {
 
 //40byte信息头
 typedef struct {
-    char ciSize[4]; //BITMAPFILEHEADER所占的字节数
+    char ciSize[4]; //BitmapInfoHeader所占的字节数
     long ciWidth; //宽度
     long ciHeight; //高度
     char ciPlanes[2]; //目标设备的位平面数，值为1
@@ -33,18 +33,19 @@ typedef struct {
     char ciClrImportant[4]; //指定重要的颜色数，当该域的值等于颜色数时（或者等于0时），表示所有颜色都一样重要
 }__attribute__((packed)) BitmapInfoHeader;
 
+//24位RGB格式的像素结构
 typedef struct {
     unsigned char blue;
     unsigned char green;
     unsigned char red;
     //unsigned short reserved;
-}__attribute__((packed)) Pixel24Bit; //颜色模式RGB
+}__attribute__((packed)) Pixel24Bit; 
 
 //文件头
 BitmapFileHeader fhFileHead;
 BitmapInfoHeader ihInfoHead;
 
-//帧缓冲起始指针
+//帧缓存起始指针
 static char * lpFrameBuffer = 0;
 
 //屏幕参数
@@ -109,7 +110,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-    //初始化帧缓冲为全0x00
+    //初始化帧缓存为全0x00
     memset(lpFrameBuffer, 0, iScreenTotalSizeInByte);
 
     //显示图像
@@ -184,7 +185,7 @@ int PrintBitmap24BitToScreen(char * sFilePath) {
 
     iCurrentDrawingLineX = 0;
     iCurrentDrawingLineY = 0;
-    //向帧缓冲中写BMP图片
+    //向帧缓存中写BMP图片
     while (!feof(hBitmapFile)) {
         //24-Bit像素对象
         Pixel24Bit pixCurrentPixel;
